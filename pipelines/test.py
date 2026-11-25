@@ -2,7 +2,7 @@ import logging
 
 from pipelines.constants import URL
 from pipelines.scraper import ScrapingClient
-
+from pipelines.tasks import save_parquet
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,4 +23,4 @@ for ano in ["2023", "2025"]:
 
     df = client.read_file(content, url)
 
-    print(df.shape)
+    save_parquet(df, ano, "01")
