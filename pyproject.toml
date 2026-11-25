@@ -12,6 +12,7 @@ dependencies = [
     "prefect>=3,<4",
     "pyarrow>=26.0.1",
     "requests>=2.34.2",
+    "tqdm>=4.70.1",
 ]
 
 [tool.uv]
