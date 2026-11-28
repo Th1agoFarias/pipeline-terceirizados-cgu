@@ -7,10 +7,12 @@ requires-python = ">=3.12"
 
 dependencies = [
     "beautifulsoup4>=4.15.0",
+    "boto3>=1.44.12",
     "openpyxl>=3.1.5",
     "pandas>=3.1.1",
     "prefect>=3,<4",
     "pyarrow>=26.0.1",
+    "python-dotenv>=1.2.4",
     "requests>=2.34.2",
     "tqdm>=4.70.1",
 ]
