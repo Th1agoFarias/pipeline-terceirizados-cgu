@@ -1,12 +1,16 @@
+from pathlib import Path
 from prefect import flow, get_run_logger
 
-from pipelines.constants import MES_MAP
+from pipelines.constants import MES_MAP, RAW_PREFIX
 
 from pipelines.tasks import (
     get_links,
     extract_data,
     save_parquet,
-    is_processed
+    is_processed,
+    ensure_bucket,
+    list_objects,
+    upload_parquet
 )
 
 
@@ -14,6 +18,10 @@ from pipelines.tasks import (
 def raw_terceirizados_flow():
 
     logger = get_run_logger()
+
+    ensure_bucket()
+
+    objetos_existentes = list_objects()
 
     dados = get_links()
 
@@ -25,24 +33,38 @@ def raw_terceirizados_flow():
                 continue
 
             if not url.lower().endswith((".csv", ".xlsx")):
-
-                logger.warning(
-                    f"Formato não suportado: {ano}/{mes}"
-                )
-
+                logger.warning(f"Formato não suportado: {ano}/{mes}")
                 continue
 
-            if is_processed(ano, MES_MAP[mes]):
+            mes_num = MES_MAP[mes]
 
-                logger.info(f"Arquivo já processado: {ano}/{mes}")
+            filename = f"terceirizados_{ano}-{mes_num}.parquet"
 
+            object_name = f"{RAW_PREFIX}{filename}"
+
+            # Verifica se existe no RustFS
+            if object_name in objetos_existentes:
+                logger.info(f"Objeto já processado: {object_name}")
                 continue
 
-            logger.info(f"Processando: {ano}/{mes}")
+            # Verifica se existe localmente
+            if is_processed(ano, mes_num):
 
-            df = extract_data(url)
+                file_path = Path("data/raw") / filename
 
-            save_parquet(df, ano, MES_MAP[mes])
+                logger.info(f"Reaproveitando arquivo local: {filename}")
+
+            else:
+
+                logger.info(f"Processando: {ano}/{mes}")
+
+                df = extract_data(url)
+
+                file_path = save_parquet(df, ano, mes_num)
+
+            upload_parquet(file_path)
+
+            objetos_existentes.add(object_name)
 
     logger.info("Pipeline de ingestão concluído.")
 
